@@ -33,6 +33,11 @@ def create_app():
     app.register_blueprint(exports_bp, url_prefix="/api/exports")
     app.register_blueprint(chatbot_bp, url_prefix="/api/chatbot")
 
+    with app.app_context():
+        from .bootstrap import bootstrap_demo_data
+
+        bootstrap_demo_data()
+
     @app.get("/")
     def index():
         return {

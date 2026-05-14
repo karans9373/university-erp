@@ -1,6 +1,11 @@
 import axios from "axios";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api";
+function normalizeApiBaseUrl(url) {
+  const base = (url || "http://localhost:5001/api").trim().replace(/\/+$/, "");
+  return base.endsWith("/api") ? base : `${base}/api`;
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 export const EXPORT_PDF_URL = `${API_BASE_URL}/exports/pdf`;
 export const EXPORT_EXCEL_URL = `${API_BASE_URL}/exports/excel`;
 

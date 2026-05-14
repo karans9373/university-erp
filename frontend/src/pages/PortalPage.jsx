@@ -116,6 +116,8 @@ const roleNavigation = {
 
 export function PortalPage({ onExit }) {
   const [auth, setAuth] = useState(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isBootstrapping, setIsBootstrapping] = useState(false);
   const [dashboard, setDashboard] = useState(fallbackDashboard);
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -168,6 +170,13 @@ export function PortalPage({ onExit }) {
 
   const activeRole = auth?.user?.role || loginForm.role;
   const sidebarItems = roleNavigation[activeRole] || roleNavigation.admin;
+  const isPortalLoading = isAuthenticating || isBootstrapping;
+  const loadingMessage = isAuthenticating
+    ? "Signing you in and securing your university session..."
+    : "Loading dashboard data from the university cloud...";
+  const loadingDetail = isAuthenticating
+    ? "Render can take a few extra seconds on the first request, so your portal is warming up."
+    : "We are fetching analytics, student records, attendance, results, notices, and services.";
 
   useEffect(() => {
     if (auth) {
@@ -177,6 +186,7 @@ export function PortalPage({ onExit }) {
   }, [auth]);
 
   async function bootstrapPortal(token) {
+    setIsBootstrapping(true);
     try {
       const [dashboardData, studentRows, attendanceRows, resultRows, feeRows, noticeRows] = await Promise.all([
         fetchDashboard(token),
@@ -238,20 +248,55 @@ export function PortalPage({ onExit }) {
       setAttendance([
         { month: "March", studentName: "Maya Rodriguez", course: "Applied Machine Learning", percentage: 96.1, present: 25, total: 26 },
       ]);
-      setResults([{ examName: "End Semester", studentName: "Maya Rodriguez", course: "Applied Machine Learning", marks: 91, grade: "A+" }]);
-      setFees([{ semesterLabel: "Spring 2026", studentName: "Maya Rodriguez", totalAmount: 4800, paidAmount: 3600, balance: 1200, status: "Partial" }]);
-    }
+        setResults([{ examName: "End Semester", studentName: "Maya Rodriguez", course: "Applied Machine Learning", marks: 91, grade: "A+" }]);
+        setFees([{ semesterLabel: "Spring 2026", studentName: "Maya Rodriguez", totalAmount: 4800, paidAmount: 3600, balance: 1200, status: "Partial" }]);
+    } finally {
+      setIsBootstrapping(false);
+      }
   }
 
   async function handleLogin(event) {
     event.preventDefault();
     setLoginError("");
+    setIsAuthenticating(true);
     try {
       const session = await login({ email: loginForm.email, password: loginForm.password });
       setAuth({ token: session.accessToken, user: session.user });
     } catch {
-      setLoginError("Login failed. Use the demo credentials shown on the cards or check whether the backend is running.");
+      setLoginError("Login failed. Check that Netlify is using the correct VITE_API_BASE_URL and that the Render backend has finished waking up with the demo users available.");
+    } finally {
+      setIsAuthenticating(false);
     }
+  }
+
+  function LoadingOverlay() {
+    return (
+      <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-xl">
+        <div className="relative w-full max-w-xl overflow-hidden rounded-[2rem] border border-white/20 bg-white/80 p-8 text-center shadow-[0_30px_120px_rgba(15,23,42,0.28)] dark:bg-slate-950/85">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-cyan via-brand-blue to-brand-pink" />
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[1.75rem] bg-gradient-to-br from-brand-blue via-brand-lavender to-brand-cyan shadow-[0_20px_45px_rgba(59,130,246,0.32)]">
+            <div className="h-10 w-10 rounded-full border-4 border-white/35 border-t-white animate-spin" />
+          </div>
+          <div className="mt-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.38em] text-brand-blue">UniSphere ERP</p>
+            <h3 className="mt-3 font-display text-3xl font-bold text-slate-900 dark:text-white">Preparing your portal</h3>
+            <p className="mt-4 text-base font-medium text-slate-700 dark:text-slate-200">{loadingMessage}</p>
+            <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-300">{loadingDetail}</p>
+          </div>
+          <div className="mt-6 grid gap-3 text-left sm:grid-cols-3">
+            {["Authenticating role access", "Connecting to Python API", "Building a live dashboard view"].map((item, index) => (
+              <div key={item} className="rounded-[1.25rem] border border-slate-200/70 bg-white/75 px-4 py-4 text-sm text-slate-700 shadow-sm dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-brand-blue/10 text-xs font-bold text-brand-blue">{index + 1}</span>
+                  <span className="font-semibold">In progress</span>
+                </div>
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   function handleQuickRoleSelect(roleKey) {
@@ -521,10 +566,14 @@ export function PortalPage({ onExit }) {
                 />
               </div>
               {loginError ? <p className="rounded-2xl bg-rose-500/10 px-4 py-3 text-sm text-rose-600">{loginError}</p> : null}
-              <button className="w-full rounded-full bg-brand-navy px-5 py-4 font-semibold text-white transition hover:bg-brand-blue" type="submit">
-                Continue to Dashboard
-              </button>
-            </form>
+                <button
+                  className="w-full rounded-full bg-brand-navy px-5 py-4 font-semibold text-white transition hover:bg-brand-blue disabled:cursor-not-allowed disabled:bg-slate-400"
+                  type="submit"
+                  disabled={isPortalLoading}
+                >
+                  {isAuthenticating ? "Signing In..." : "Continue to Dashboard"}
+                </button>
+              </form>
             <div className="mt-6 rounded-[1.5rem] bg-gradient-to-br from-brand-navy to-brand-lavender p-5 text-white">
               <p className="font-display text-xl font-bold">Quick Demo Credentials</p>
               <div className="mt-4 space-y-3">
@@ -1192,14 +1241,21 @@ export function PortalPage({ onExit }) {
   }
 
   if (!auth) {
-    return renderLoginScreen();
+    return (
+      <>
+        {isPortalLoading ? <LoadingOverlay /> : null}
+        {renderLoginScreen()}
+      </>
+    );
   }
 
   return (
-    <section className="section-shell py-8">
-      <div className="grid gap-6 xl:grid-cols-[290px_1fr]">
-        <Sidebar user={auth.user} items={sidebarItems} activeItem={activeSection} onSelect={setActiveSection} />
-        <div className="space-y-6">
+      <>
+        {isPortalLoading ? <LoadingOverlay /> : null}
+        <section className="section-shell py-8">
+        <div className="grid gap-6 xl:grid-cols-[290px_1fr]">
+          <Sidebar user={auth.user} items={sidebarItems} activeItem={activeSection} onSelect={setActiveSection} />
+          <div className="space-y-6">
           <div className="glass-panel flex flex-col gap-4 rounded-[1.5rem] p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-300">Signed in session</p>
@@ -1216,8 +1272,9 @@ export function PortalPage({ onExit }) {
             </div>
           </div>
           {renderSection()}
+          </div>
         </div>
-      </div>
-    </section>
-  );
+        </section>
+      </>
+    );
 }
