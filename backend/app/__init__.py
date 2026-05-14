@@ -33,6 +33,20 @@ def create_app():
     app.register_blueprint(exports_bp, url_prefix="/api/exports")
     app.register_blueprint(chatbot_bp, url_prefix="/api/chatbot")
 
+    @app.get("/")
+    def index():
+        return {
+            "service": "UniSphere ERP API",
+            "status": "running",
+            "message": "Backend is live. Use the /api routes for application data.",
+            "endpoints": {
+                "health": "/api/health",
+                "login": "/api/auth/login",
+                "students": "/api/students",
+                "dashboard": "/api/analytics/dashboard",
+            },
+        }
+
     @app.get("/api/health")
     def health():
         return {"status": "ok", "service": "UniSphere ERP API"}
