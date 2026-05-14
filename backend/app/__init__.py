@@ -11,12 +11,7 @@ jwt = JWTManager()
 
 
 def _cors_origins():
-    configured = os.getenv("FRONTEND_URL", "").strip()
-    if not configured:
-        return "*"
-
-    origins = [item.strip() for item in configured.split(",") if item.strip()]
-    return origins or "*"
+    return "*"
 
 
 def create_app():
