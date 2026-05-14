@@ -95,7 +95,7 @@ Recommended Render setup:
 
 - Root directory: `backend`
 - Build command: `pip install -r requirements.txt`
-- Start command: `gunicorn run:app`
+- Start command: `gunicorn wsgi:app`
 
 Environment variables:
 
