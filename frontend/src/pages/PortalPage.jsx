@@ -262,8 +262,8 @@ export function PortalPage({ onExit }) {
     try {
       const session = await login({ email: loginForm.email, password: loginForm.password });
       setAuth({ token: session.accessToken, user: session.user });
-    } catch {
-      setLoginError("Login failed. Check that Netlify is using the correct VITE_API_BASE_URL and that the Render backend has finished waking up with the demo users available.");
+    } catch (error) {
+      setLoginError(error.message || "Login failed. Please check the backend connection and try again.");
     } finally {
       setIsAuthenticating(false);
     }

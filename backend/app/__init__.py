@@ -10,6 +10,15 @@ db = SQLAlchemy()
 jwt = JWTManager()
 
 
+def _cors_origins():
+    configured = os.getenv("FRONTEND_URL", "").strip()
+    if not configured:
+        return "*"
+
+    origins = [item.strip() for item in configured.split(",") if item.strip()]
+    return origins or "*"
+
+
 def create_app():
     load_dotenv()
     app = Flask(__name__)
@@ -19,7 +28,7 @@ def create_app():
 
     db.init_app(app)
     jwt.init_app(app)
-    CORS(app, resources={r"/api/*": {"origins": os.getenv("FRONTEND_URL", "*")}}, supports_credentials=True)
+    CORS(app, resources={r"/api/*": {"origins": _cors_origins()}}, supports_credentials=False)
 
     from .routes.analytics import analytics_bp
     from .routes.auth import auth_bp

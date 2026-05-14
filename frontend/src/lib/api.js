@@ -11,11 +11,28 @@ export const EXPORT_EXCEL_URL = `${API_BASE_URL}/exports/excel`;
 
 const client = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 20000,
 });
 
 export async function login(credentials) {
-  const { data } = await client.post("/auth/login", credentials);
-  return data;
+  try {
+    const { data } = await client.post("/auth/login", credentials);
+    return data;
+  } catch (error) {
+    if (error.response?.status === 401) {
+      throw new Error("Invalid email or password.");
+    }
+
+    if (error.response?.status >= 500) {
+      throw new Error("The backend responded with a server error. Please wait a few seconds and try again.");
+    }
+
+    if (!error.response) {
+      throw new Error(`The frontend could not reach ${API_BASE_URL}. Check Netlify environment variables and Render CORS settings.`);
+    }
+
+    throw new Error(error.response?.data?.message || "Login request failed.");
+  }
 }
 
 export async function register(payload) {
